@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: "/etc/certs/k8s.local-cert.pem"
+      keyFile: "/etc/certs/k8s.local-key.pem"

@@ -1,0 +1,130 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v3.0
+    hostname: traefik
+    container_name: traefik
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./infra/traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml
+      - ./infra/traefik/certs:/etc/certs
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.k8s.local`)"
+      - "traefik.http.routers.traefik.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+  proton:
+     image: ghcr.io/timeplus-io/proton:latest
+     hostname: proton
+     container_name: proton
+     pull_policy: always
+     ports:
+      #  - 3218:3218 #http port for JDBC driver, default streaming mode
+       - 8123:8123 #http port for JDBC driver, default batch mode
+       - 8463:8463 #native port for proton client
+  redpanda:
+    image: redpandadata/redpanda:v23.3.4
+    hostname: redpanda
+    container_name: redpanda
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,OUTSIDE://redpanda:9092
+      - --check=false
+  console:
+    image: redpandadata/console:v2.3.10
+    hostname: console
+    container_name: console
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+        connect:
+          enabled: true
+          clusters:
+          - name: cdc
+            url: http://connect:8083
+#    ports:
+#      - 8080:8080
+    depends_on:
+      - redpanda
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.console.rule=Host(`console.k8s.local`)"
+      - "traefik.http.routers.console.entrypoints=websecure"
+      - "traefik.http.routers.console.tls=true"
+      - "traefik.http.services.console.loadbalancer.server.port=8080"
+  connect:
+    image: debezium/connect:2.5.1.Final
+    hostname: connect
+    container_name: connect
+    depends_on:
+      - redpanda
+#    ports:
+#      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: "redpanda:9092"
+      GROUP_ID: "1"
+      CONFIG_STORAGE_TOPIC: "inventory.configs"
+      OFFSET_STORAGE_TOPIC: "inventory.offset"
+      STATUS_STORAGE_TOPIC: "inventory.status"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.connect.rule=Host(`connect.k8s.local`)"
+      - "traefik.http.routers.connect.entrypoints=websecure"
+      - "traefik.http.routers.connect.tls=true"
+      - "traefik.http.services.connect.loadbalancer.server.port=8083"
+  postgres:
+    image: debezium/postgres:16-alpine
+    hostname: postgres
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "postgres", "-U", "postgres"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  pgdata:
+  proton:
+

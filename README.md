@@ -5,49 +5,15 @@ CDC  with Debezium/Redpanda/Proton
 
 ## Local Environment Setup
 
-Install [mkcert](https://github.com/FiloSottile/mkcert) and generate some certs for TLS usage
-
-```shell
-# install mkcert
-brew install mkcert
-mkcert -install
-
-# You can find the root CA path by running the command below.
-mkcert -CAROOT
-ls -1 ~/Library/Application\ Support/mkcert 
-
-```
-
-### Create Certs
-
-```shell
-cd  infra/traefik
-mkdir certs && cd certs
-
-mkcert -cert-file k8s.local-cert.pem -key-file k8s.local-key.pem \
-"*.k8s.local" localhost 127.0.0.1 ::1
-```
-
-> Reminder: X.509 wildcards only go one level deep, so this won't match a.b.k8s.local
-
-
-### Tell your PC where to go
-```shell
-vi /etc/hosts
-# then this line at the end
-127.0.0.1 k8s.local
-```
-
+ 
 ## Start
 
 ```shell
 docker-compose up
 
-open https://traefik.k8s.local/dashboard/#/
-open http://traefik.k8s.local/dashboard/#/
-
-open https://console.k8s.local/
-open https://connect.k8s.local/
+open https://traefik.localhost.direct/dashboard/#/
+open https://console.localhost.direct/
+open https://connect.localhost.direct/
 ```
 
 
@@ -82,7 +48,7 @@ Perform the following command in your host server, since port 8083 is exposed fr
 
 ```
 ```shell
-curl -X POST -H "Content-Type: application/json" --data @connector.json https://connect.k8s.local/connectors | jq
+curl -X POST -H "Content-Type: application/json" --data @connector.json https://connect.localhost.direct/connectors | jq
 ```
 
 ### Trigger the Snapshot
@@ -104,6 +70,9 @@ You can use `docker exec -it proton proton-client -m -n` to run the SQL client i
 select * from customers
 ```
 
+### Connnect to Proton via DBeaver or DataGrip
+
+https://github.com/timeplus-io/proton/tree/develop/examples/jdbc
 
 ## References
 

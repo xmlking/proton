@@ -109,5 +109,3 @@ Temporary Items
 ### Project
 TODO.md
 .env
-infra/traefik/certs/k8s.local-cert.pem
-infra/traefik/certs/k8s.local-key.pem

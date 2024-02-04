@@ -8,9 +8,7 @@
     "database.user": "postgres",
     "database.password": "postgres",
     "database.dbname" : "postgres",
-
     "topic.prefix": "test",
-
     "table.include.list" : "public.characters",
     "signal.data.collection": "public.debezium_signal",
     "signal.enabled.channels": "source,kafka",

@@ -6,6 +6,17 @@ CDC  with Debezium/Redpanda/Proton
 ## Local Environment Setup
 
  
+## First Time Setup
+
+Unpack `localhost.direct.zip`.
+
+> HINT: password: `localhost`
+
+```shell
+unzip -P localhost infra/traefik/certs/localhost.direct.zip -d infra/traefik/certs/
+```
+
+
 ## Start
 
 ```shell

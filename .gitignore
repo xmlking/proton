@@ -109,3 +109,7 @@ Temporary Items
 ### Project
 TODO.md
 .env
+# localhost.direct certs
+infra/traefik/certs/localhost.direct.crt
+infra/traefik/certs/localhost.direct.key
+
